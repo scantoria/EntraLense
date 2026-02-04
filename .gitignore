@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+
+# Environment variables
+.env
+.env.local
+
+# VS Code
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# EntraLense outputs
+exports/
+logs/
+*.csv
+*.xlsx
+*.pdf
+
+# PyInstaller
+build/
+dist/
+*.spec

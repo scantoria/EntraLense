@@ -1,0 +1,61 @@
+{
+  "template_id": "windows_baseline",
+  "template_name": "Windows Security Baseline",
+  "description": "Standard security baseline for Windows devices",
+  "policies": [
+    {
+      "policy_id": "WIN-ENC-001",
+      "policy_name": "BitLocker Encryption",
+      "policy_type": "encryption",
+      "requirements": {
+        "encryption_method": "BitLocker",
+        "status": "enabled",
+        "tpm_required": true,
+        "minimum_strength": "AES-256"
+      },
+      "severity": "critical",
+      "platforms": ["windows"],
+      "remediation": "Enable BitLocker with TPM protection"
+    },
+    {
+      "policy_id": "WIN-FW-001",
+      "policy_name": "Windows Defender Firewall",
+      "policy_type": "firewall",
+      "requirements": {
+        "firewall_enabled": true,
+        "domain_profile": "enabled",
+        "private_profile": "enabled",
+        "public_profile": "enabled"
+      },
+      "severity": "high",
+      "platforms": ["windows"],
+      "remediation": "Enable Windows Defender Firewall for all profiles"
+    },
+    {
+      "policy_id": "WIN-AV-001",
+      "policy_name": "Windows Defender Antivirus",
+      "policy_type": "antivirus",
+      "requirements": {
+        "antivirus_enabled": true,
+        "real_time_protection": true,
+        "definitions_age_days": 7
+      },
+      "severity": "high",
+      "platforms": ["windows"],
+      "remediation": "Enable Windows Defender and update definitions"
+    },
+    {
+      "policy_id": "WIN-PWD-001",
+      "policy_name": "Password Policy",
+      "policy_type": "password",
+      "requirements": {
+        "minimum_length": 12,
+        "require_complexity": true,
+        "maximum_age_days": 90
+      },
+      "severity": "high",
+      "platforms": ["windows"],
+      "remediation": "Configure password policy via Group Policy or Intune"
+    }
+  ]
+}

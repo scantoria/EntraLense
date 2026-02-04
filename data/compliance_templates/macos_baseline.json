@@ -1,0 +1,54 @@
+{
+  "template_id": "macos_baseline",
+  "template_name": "macOS Security Baseline",
+  "description": "Standard security baseline for macOS devices",
+  "policies": [
+    {
+      "policy_id": "MAC-ENC-001",
+      "policy_name": "FileVault Encryption",
+      "policy_type": "encryption",
+      "requirements": {
+        "encryption_method": "FileVault",
+        "status": "enabled"
+      },
+      "severity": "critical",
+      "platforms": ["macos"],
+      "remediation": "Enable FileVault disk encryption"
+    },
+    {
+      "policy_id": "MAC-FW-001",
+      "policy_name": "macOS Firewall",
+      "policy_type": "firewall",
+      "requirements": {
+        "firewall_enabled": true,
+        "stealth_mode": true
+      },
+      "severity": "high",
+      "platforms": ["macos"],
+      "remediation": "Enable firewall with stealth mode in System Preferences"
+    },
+    {
+      "policy_id": "MAC-SL-001",
+      "policy_name": "Screen Lock",
+      "policy_type": "screen_lock",
+      "requirements": {
+        "timeout_minutes": 5,
+        "require_password": true
+      },
+      "severity": "medium",
+      "platforms": ["macos"],
+      "remediation": "Configure screen lock timeout in Security & Privacy settings"
+    },
+    {
+      "policy_id": "MAC-OS-001",
+      "policy_name": "Minimum OS Version",
+      "policy_type": "minimum_os",
+      "requirements": {
+        "min_version": "13.0.0"
+      },
+      "severity": "high",
+      "platforms": ["macos"],
+      "remediation": "Update macOS to the latest supported version"
+    }
+  ]
+}

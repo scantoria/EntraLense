@@ -4,7 +4,7 @@ Console UI utilities for EntraLense.
 Provides colored output, menus, and user interaction.
 """
 import os
-import sys
+from typing import Any, List, Optional
 from colorama import init, Fore, Back, Style
 
 # Initialize colorama for cross-platform colored text
@@ -13,7 +13,7 @@ init(autoreset=True)
 class ConsoleUI:
     """Handles console UI elements: colors, menus, displays"""
     
-    def __init__(self, dark_mode=True):
+    def __init__(self, dark_mode: bool = True):
         self.dark_mode = dark_mode
         self.setup_colors()
     
@@ -63,7 +63,7 @@ class ConsoleUI:
         color = colors.get(msg_type, self.text_color)
         print(f"{color}{message}{Style.RESET_ALL}")
     
-    def display_menu(self, title: str, menu_items: list) -> str:
+    def display_menu(self, title: str, menu_items: list[tuple[str, str]]) -> str:
         """Display a menu and get user choice"""
         print(f"\n{self.header_color}{title}")
         print(f"{self.header_color}{'─' * len(title)}{Style.RESET_ALL}")
@@ -75,7 +75,7 @@ class ConsoleUI:
         choice = input(f"{self.info_color}Select option: {Style.RESET_ALL}").strip()
         return choice
     
-    def display_dataframe(self, df, title: str, max_rows: int = 20):
+    def display_dataframe(self, df: Any, title: str, max_rows: int = 20):
         """Display a pandas DataFrame in formatted table"""
         if df.empty:
             self.print_message("⚠️ No data available.", "warning")
@@ -115,7 +115,7 @@ class ConsoleUI:
         """Wait for user to press any key"""
         input(f"\n{self.info_color}Press Enter to continue...{Style.RESET_ALL}")
     
-    def print_table(self, data: list, headers: list | None = None):
+    def print_table(self, data: List[Any], headers: Optional[List[str]] = None):
         """Print a simple table"""
         if not data:
             return

@@ -1,0 +1,10 @@
+{
+  "tenant_id": "c8916135-4eca-4f93-af7f-283d9952deac",
+  "client_id": "12ea1c92-4506-42c4-9e34-4a9543cef92d",
+  "client_secret": "your-client-secret-here",
+  "use_interactive_auth": true,
+  "max_users": 5000,
+  "export_path": "./exports",
+  "dark_mode": true,
+  "last_report_type": "all"
+}

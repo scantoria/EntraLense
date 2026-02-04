@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Any, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
@@ -126,7 +126,7 @@ class Asset:
         if not self.purchase_date or self.purchase_price <= 0:
             return 0.0
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         years_owned = (now - self.purchase_date).days / 365.25
 
         # Simple straight-line depreciation
@@ -140,7 +140,7 @@ class Asset:
         if not self.warranty_end_date:
             return WarrantyStatus.UNKNOWN
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         if now > self.warranty_end_date:
             return WarrantyStatus.EXPIRED
@@ -166,7 +166,7 @@ class Asset:
 
         # Check last seen
         if self.last_seen_date:
-            days_since_seen = (datetime.utcnow() - self.last_seen_date).days
+            days_since_seen = (datetime.now(timezone.utc) - self.last_seen_date).days
             if days_since_seen > 90:  # 90 days
                 reasons.append(f"Not seen in {days_since_seen} days")
 
@@ -277,7 +277,7 @@ class AssetTracker:
             data_file.parent.mkdir(parents=True, exist_ok=True)
 
             data = {
-                "last_updated": datetime.utcnow().isoformat(),
+                "last_updated": datetime.now(timezone.utc).isoformat(),
                 "total_assets": len(self.assets),
                 "assets": [asset.to_dict() for asset in self.assets.values()]
             }
@@ -439,11 +439,11 @@ class AssetTracker:
 
             # Set default warranty (1 year from now if new)
             if not asset.warranty_end_date:
-                asset.warranty_end_date = datetime.utcnow() + timedelta(days=365)
+                asset.warranty_end_date = datetime.now(timezone.utc) + timedelta(days=365)
 
             # Set default purchase date (6 months ago if new)
             if not asset.purchase_date:
-                asset.purchase_date = datetime.utcnow() - timedelta(days=180)
+                asset.purchase_date = datetime.now(timezone.utc) - timedelta(days=180)
 
             # Set default deployment date
             if not asset.deployment_date and last_seen_date:
@@ -576,7 +576,7 @@ class AssetTracker:
         summary = AssetSummary()
         summary.total_assets = len(self.assets)
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         for asset in self.assets.values():
             # Count by status
@@ -694,7 +694,7 @@ class AssetTracker:
         lines = []
 
         lines.append("=== ASSET TRACKING & INVENTORY REPORT ===")
-        lines.append(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        lines.append(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
         lines.append("")
 
         # Overall summary
@@ -840,7 +840,7 @@ class AssetTracker:
         lines = []
 
         lines.append("=== ASSET INVENTORY AUDIT REPORT ===")
-        lines.append(f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')}")
+        lines.append(f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}")
         lines.append(f"Total Assets: {len(self.assets)}")
         lines.append("")
 
@@ -894,7 +894,7 @@ class AssetTracker:
         old_assets = []
         for asset in self.assets.values():
             if asset.last_seen_date:
-                days_since_seen = (datetime.utcnow() - asset.last_seen_date).days
+                days_since_seen = (datetime.now(timezone.utc) - asset.last_seen_date).days
                 if days_since_seen > 180:
                     old_assets.append((asset, days_since_seen))
 

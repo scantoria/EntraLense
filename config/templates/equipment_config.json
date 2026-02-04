@@ -1,0 +1,6 @@
+{
+  "device_types": ["windows", "macOS", "ios", "android"],
+  "compliance_threshold": 95.0,
+  "export_path": "./exports/equipment",
+  "notes": "This template shows available equipment report configuration options"
+}

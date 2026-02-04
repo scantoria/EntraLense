@@ -1,0 +1,68 @@
+[
+  {
+    "device_id": "WIN-DEV-001",
+    "device_name": "Finance-Laptop-01",
+    "operating_system": "windows",
+    "os_version": "11.0.22000",
+    "department": "Finance",
+    "is_encrypted": true,
+    "encryption_method": "BitLocker",
+    "compliance_state": "compliant",
+    "firewall_enabled": true,
+    "antivirus_installed": true,
+    "screen_lock_minutes": 5,
+    "password_complexity": true
+  },
+  {
+    "device_id": "MAC-DEV-001",
+    "device_name": "HR-MacBook-01",
+    "operating_system": "macos",
+    "os_version": "13.5.1",
+    "department": "HR",
+    "is_encrypted": false,
+    "encryption_method": null,
+    "compliance_state": "noncompliant",
+    "firewall_enabled": true,
+    "antivirus_installed": false,
+    "screen_lock_minutes": 10,
+    "password_complexity": true
+  },
+  {
+    "device_id": "WIN-DEV-002",
+    "device_name": "IT-Desktop-01",
+    "operating_system": "windows",
+    "os_version": "10.0.19044",
+    "department": "IT",
+    "is_encrypted": true,
+    "encryption_method": "BitLocker",
+    "compliance_state": "noncompliant",
+    "firewall_enabled": false,
+    "antivirus_installed": true,
+    "screen_lock_minutes": 15,
+    "password_complexity": false
+  },
+  {
+    "device_id": "IOS-DEV-001",
+    "device_name": "Sales-iPhone-01",
+    "operating_system": "ios",
+    "os_version": "16.5.0",
+    "department": "Sales",
+    "is_encrypted": true,
+    "encryption_method": "Data Protection",
+    "compliance_state": "compliant",
+    "screen_lock_minutes": 1,
+    "password_complexity": true
+  },
+  {
+    "device_id": "AND-DEV-001",
+    "device_name": "Marketing-Android-01",
+    "operating_system": "android",
+    "os_version": "13.0.0",
+    "department": "Marketing",
+    "is_encrypted": true,
+    "encryption_method": "FBE",
+    "compliance_state": "compliant",
+    "screen_lock_minutes": 2,
+    "password_complexity": true
+  }
+]
