@@ -10,6 +10,7 @@ import pandas as pd
 from modules.intune_integration import IntuneIntegration, IntuneDevice
 from modules.compliance_checker import ComplianceChecker
 from modules.os_patch_checker import OSPatchChecker, PatchStatus, VulnerabilityLevel
+from modules.asset_tracker import AssetTracker, Asset, AssetStatus, AssetType, WarrantyStatus
 
 logger = logging.getLogger(__name__)
 
@@ -510,7 +511,8 @@ class EquipmentReports:
         include_raw_data: bool = False
     ) -> Dict[str, Any]:
         """
-        Generate asset tracking report with serial numbers.
+        Generate comprehensive asset tracking report with serial numbers,
+        financial tracking, warranty management, and audit capabilities.
 
         Args:
             device_types: Filter by device types
@@ -518,35 +520,81 @@ class EquipmentReports:
             include_raw_data: Whether to include raw data
 
         Returns:
-            Dictionary with report data
+            Dictionary with report data including asset inventory,
+            financial summaries, and audit reports
         """
         device_types = device_types or self.DEFAULT_DEVICE_TYPES
 
         print("\n" + "=" * 60)
-        print("   ASSET TRACKING REPORT")
+        print("   ASSET TRACKING & INVENTORY REPORT")
         print("=" * 60)
 
-        # Fetch devices
-        print("\n[Step 1/2] Fetching devices from Microsoft Intune...")
+        # Step 1: Fetch devices from Intune
+        print("\n[Step 1/4] Fetching devices from Microsoft Intune...")
         devices = await self.intune.get_managed_devices(device_types)
 
         if not devices:
+            print("   No devices found in Intune")
             return {
                 "dataframe": pd.DataFrame(),
                 "statistics": {},
                 "csv_path": None,
+                "generated_at": datetime.utcnow(),
                 "message": "No devices found"
             }
 
         print(f"   Found {len(devices)} devices")
 
-        # Generate report
-        print("\n[Step 2/2] Generating report...")
-
-        # Build asset-focused DataFrame
-        data = []
+        # Step 2: Convert to device info for asset tracker
+        print("\n[Step 2/4] Preparing device information...")
+        devices_info = []
         for device in devices:
-            data.append({
+            device_info = {
+                "device_id": device.device_id,
+                "device_name": device.device_name,
+                "operating_system": device.operating_system,
+                "os_version": device.os_version,
+                "manufacturer": device.manufacturer,
+                "model": device.model,
+                "serial_number": device.serial_number,
+                "compliance_state": device.compliance_state,
+                "management_agent": device.management_agent,
+                "last_sync_date_time": device.last_sync_date_time,
+                "user_principal_name": device.user_principal_name,
+                "device_enrollment_type": device.device_enrollment_type
+            }
+            devices_info.append(device_info)
+
+        # Step 3: Collect and analyze asset data
+        print("\n[Step 3/4] Analyzing asset inventory...")
+
+        asset_tracker = AssetTracker(self.auth, self.config)
+        assets = await asset_tracker.collect_asset_data(devices_info)
+
+        if not assets:
+            print("   No asset data collected")
+            return {
+                "dataframe": pd.DataFrame(),
+                "statistics": {},
+                "csv_path": None,
+                "generated_at": datetime.utcnow(),
+                "message": "No asset data collected"
+            }
+
+        # Step 4: Generate statistics and reports
+        print("\n[Step 4/4] Generating asset tracking report...")
+
+        summary = asset_tracker.generate_summary()
+        report_text = asset_tracker.generate_report_text()
+        audit_report = asset_tracker.generate_audit_report()
+
+        # Export to DataFrames
+        assets_df, summary_df, financial_df = asset_tracker.export_to_dataframe()
+
+        # Also create the basic device-focused DataFrame for backwards compatibility
+        basic_data = []
+        for device in devices:
+            basic_data.append({
                 "Device Name": device.device_name,
                 "Serial Number": device.serial_number or "N/A",
                 "Manufacturer": device.manufacturer,
@@ -559,10 +607,9 @@ class EquipmentReports:
                 "Enrollment Type": device.device_enrollment_type,
                 "Last Sync": device.last_sync_date_time.isoformat() if device.last_sync_date_time else ""
             })
+        basic_df = pd.DataFrame(basic_data)
 
-        df = pd.DataFrame(data)
-
-        # Calculate asset statistics
+        # Calculate basic statistics for backwards compatibility
         with_serial = sum(1 for d in devices if d.serial_number)
         without_serial = len(devices) - with_serial
 
@@ -582,23 +629,116 @@ class EquipmentReports:
             "without_serial_number": without_serial,
             "serial_coverage": (with_serial / len(devices) * 100) if devices else 0,
             "manufacturer_distribution": manufacturer_dist,
-            "model_distribution": dict(sorted(model_dist.items(), key=lambda x: x[1], reverse=True)[:10])  # Top 10 models
+            "model_distribution": dict(sorted(model_dist.items(), key=lambda x: x[1], reverse=True)[:10]),
+            # Extended statistics from asset tracker
+            "total_assets": summary.total_assets if summary else 0,
+            "managed_assets": summary.managed_assets if summary else 0,
+            "unmanaged_assets": summary.unmanaged_assets if summary else 0,
+            "assets_needing_attention": summary.assets_needing_attention if summary else 0,
+            "total_current_value": summary.total_current_value if summary else 0,
+            "total_purchase_value": summary.total_purchase_value if summary else 0,
+            "total_depreciation": summary.total_depreciation if summary else 0,
+            "type_counts": summary.type_counts if summary else {},
+            "status_counts": summary.status_counts if summary else {},
+            "warranty_counts": summary.warranty_counts if summary else {},
+            "assets_by_age": summary.assets_by_age if summary else {}
         }
 
-        # Export to CSV
-        csv_path = None
-        if export_to_csv and not df.empty:
-            csv_path = self._export_to_csv(df, "asset_tracking")
+        # Export to CSV if requested
+        csv_paths = []
+        if export_to_csv:
+            # Ensure export directory exists
+            asset_export_dir = self.export_dir / "asset_tracking"
+            asset_export_dir.mkdir(parents=True, exist_ok=True)
 
-        print("\n   Report generated successfully!")
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+            # Export main asset inventory
+            if not assets_df.empty:
+                csv_path = asset_export_dir / f"asset_inventory_{timestamp}.csv"
+                assets_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                print(f"   Asset inventory exported to: {csv_path}")
+                csv_paths.append(str(csv_path))
+
+            # Export summary
+            if not summary_df.empty:
+                csv_path = asset_export_dir / f"asset_summary_{timestamp}.csv"
+                summary_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                print(f"   Asset summary exported to: {csv_path}")
+                csv_paths.append(str(csv_path))
+
+            # Export financial details
+            if not financial_df.empty:
+                csv_path = asset_export_dir / f"asset_financial_{timestamp}.csv"
+                financial_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                print(f"   Financial details exported to: {csv_path}")
+                csv_paths.append(str(csv_path))
+
+            # Export basic device list (backwards compatible)
+            if not basic_df.empty:
+                csv_path = asset_export_dir / f"device_list_{timestamp}.csv"
+                basic_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                csv_paths.append(str(csv_path))
+
+        print("\n   Asset tracking report generated successfully!")
 
         return {
-            "dataframe": df,
+            "dataframe": basic_df,  # Primary dataframe for backwards compatibility
+            "assets_inventory": assets_df,
+            "assets_summary": summary_df,
+            "financial_details": financial_df,
+            "assets": assets,
+            "asset_tracker": asset_tracker,
+            "summary": summary,
             "statistics": stats,
-            "csv_path": csv_path,
+            "report_text": report_text,
+            "audit_report": audit_report,
+            "csv_paths": csv_paths,
+            "csv_path": csv_paths[0] if csv_paths else None,  # Backwards compatible
             "generated_at": datetime.utcnow(),
+            "total_assets": len(assets),
+            "total_value": summary.total_current_value if summary else 0,
             "raw_data": [d.to_dict() for d in devices] if include_raw_data else None
         }
+
+    async def search_assets_by_serial(self, serial_number: str) -> List[Asset]:
+        """
+        Search assets by serial number.
+
+        Args:
+            serial_number: Serial number to search (partial or full match)
+
+        Returns:
+            List of matching Asset objects
+        """
+        asset_tracker = AssetTracker(self.auth, self.config)
+        return asset_tracker.find_assets_by_serial(serial_number)
+
+    async def search_assets_by_user(self, username: str) -> List[Asset]:
+        """
+        Search assets by assigned user.
+
+        Args:
+            username: Username to search (partial or full match)
+
+        Returns:
+            List of matching Asset objects
+        """
+        asset_tracker = AssetTracker(self.auth, self.config)
+        return asset_tracker.find_assets_by_user(username)
+
+    async def search_assets_by_type(self, asset_type: AssetType) -> List[Asset]:
+        """
+        Search assets by type.
+
+        Args:
+            asset_type: Asset type to filter by
+
+        Returns:
+            List of matching Asset objects
+        """
+        asset_tracker = AssetTracker(self.auth, self.config)
+        return [a for a in asset_tracker.assets.values() if a.asset_type == asset_type]
 
     def display_report_summary(self, report_data: Dict[str, Any], report_type: str) -> None:
         """Display report summary in console."""

@@ -189,7 +189,8 @@ class EntraLense:
                 ("1", "Device encryption status"),
                 ("2", "Compliance policy adherence"),
                 ("3", "OS version/patch status"),
-                ("4", "Asset tracking (serial numbers for inventory audits)"),
+                ("4", "Asset tracking (serial numbers, inventory, financials)"),
+                ("5", "Search assets"),
                 ("B", "Back to Main Menu")
             ]
 
@@ -209,6 +210,9 @@ class EntraLense:
 
             elif choice == "4":
                 await self.run_asset_tracking_report()
+
+            elif choice == "5":
+                await self._search_assets_menu()
 
             else:
                 self.ui.print_message("Invalid selection!", "red")
@@ -780,18 +784,19 @@ class EntraLense:
             self.ui.press_any_key()
 
     async def run_asset_tracking_report(self):
-        """Generate asset tracking report with serial numbers"""
+        """Generate comprehensive asset tracking report with serial numbers,
+        financial tracking, warranty management, and audit capabilities"""
         assert self.ui is not None
 
         start_time = datetime.now()
 
         self.ui.clear_screen()
-        self.ui.print_header("Asset Tracking Report")
+        self.ui.print_header("Asset Tracking & Inventory Report")
 
         try:
-            # Initialize equipment reports
+            # Initialize equipment reports with config
             export_dir = Path(self.config.export_path) / "equipment"
-            equipment_reports = EquipmentReports(self.auth, export_dir=export_dir)
+            equipment_reports = EquipmentReports(self.auth, export_dir=export_dir, config=self.config)
 
             # Generate the report
             result = await equipment_reports.generate_asset_tracking_report(
@@ -801,6 +806,13 @@ class EntraLense:
 
             df = result["dataframe"]
             stats = result["statistics"]
+            assets = result.get("assets", [])
+            summary = result.get("summary")
+            report_text = result.get("report_text", "")
+            audit_report = result.get("audit_report", "")
+            assets_df = result.get("assets_inventory", pd.DataFrame())
+            financial_df = result.get("financial_details", pd.DataFrame())
+            asset_tracker = result.get("asset_tracker")
 
             # Calculate execution time
             end_time = datetime.now()
@@ -813,23 +825,37 @@ class EntraLense:
 
             # Display summary
             self.ui.clear_screen()
-            self.ui.print_header("ASSET TRACKING - RESULTS")
+            self.ui.print_header("ASSET TRACKING & INVENTORY - RESULTS")
 
-            print("\nSummary Statistics:")
+            print("\nInventory Summary:")
             print(f"   Total devices: {stats.get('total_devices', 0)}")
             print(f"   With serial number: {stats.get('with_serial_number', 0)}")
             print(f"   Without serial number: {stats.get('without_serial_number', 0)}")
             print(f"   Serial coverage: {stats.get('serial_coverage', 0):.1f}%")
             print(f"   Duration: {duration:.2f} seconds")
 
+            # Show extended statistics
+            if summary:
+                print("\nFinancial Summary:")
+                self.ui.print_message(f"   Total Current Value: ${stats.get('total_current_value', 0):,.2f}", "success")
+                print(f"   Total Purchase Value: ${stats.get('total_purchase_value', 0):,.2f}")
+                print(f"   Total Depreciation: ${stats.get('total_depreciation', 0):,.2f}")
+
+                if stats.get('assets_needing_attention', 0) > 0:
+                    self.ui.print_message(f"\n   Assets Needing Attention: {stats.get('assets_needing_attention', 0)}", "red")
+
             # Show view options menu
             while True:
                 print("\nView Options:")
-                print("1. Summary table")
-                print("2. Devices without serial numbers")
-                print("3. Manufacturer breakdown")
-                print("4. Model breakdown")
-                print("5. Export to CSV")
+                print("1. Summary table (all devices)")
+                print("2. Asset type breakdown")
+                print("3. Warranty status breakdown")
+                print("4. Financial details")
+                print("5. Assets needing attention")
+                print("6. Audit report")
+                print("7. Full inventory report")
+                print("8. Search assets")
+                print("9. Export to CSV")
                 print("B. Back to menu")
 
                 view_choice = self.ui.get_input("\nSelect view option: ", "B")
@@ -839,9 +865,9 @@ class EntraLense:
 
                 elif view_choice == "1":
                     # Summary table
-                    print("\n" + "=" * 60)
+                    print("\n" + "=" * 80)
                     self.ui.print_message("ALL DEVICES", "cyan")
-                    print("=" * 60)
+                    print("=" * 80)
                     display_cols = ["Device Name", "Serial Number", "Manufacturer",
                                     "Model", "Operating System", "Assigned User"]
                     available_cols = [c for c in display_cols if c in df.columns]
@@ -849,50 +875,180 @@ class EntraLense:
                     self.ui.press_any_key()
 
                 elif view_choice == "2":
-                    # Devices without serial numbers
-                    no_serial_df = df[(df["Serial Number"] == "N/A") | (df["Serial Number"] == "") | (df["Serial Number"].isna())]
-                    print(f"\nDEVICES WITHOUT SERIAL NUMBERS ({len(no_serial_df)} found)")
+                    # Asset type breakdown
+                    print("\n" + "=" * 60)
+                    self.ui.print_message("ASSET TYPE BREAKDOWN", "cyan")
                     print("=" * 60)
-                    if not no_serial_df.empty:
-                        display_cols = ["Device Name", "Manufacturer", "Model", "Assigned User"]
-                        available_cols = [c for c in display_cols if c in no_serial_df.columns]
-                        print(no_serial_df[available_cols].to_string(index=False))
+                    type_counts = stats.get("type_counts", {})
+                    total = stats.get("total_devices", 1)
+                    if type_counts:
+                        for asset_type, count in sorted(type_counts.items(), key=lambda x: x[1], reverse=True):
+                            pct = (count / total * 100) if total > 0 else 0
+                            print(f"   {asset_type.title()}: {count} devices ({pct:.1f}%)")
                     else:
-                        self.ui.print_message("All devices have serial numbers!", "success")
+                        # Fallback to manufacturer breakdown
+                        mfr_dist = stats.get("manufacturer_distribution", {})
+                        for mfr, count in sorted(mfr_dist.items(), key=lambda x: x[1], reverse=True):
+                            pct = (count / total * 100) if total > 0 else 0
+                            print(f"   {mfr}: {count} devices ({pct:.1f}%)")
                     self.ui.press_any_key()
 
                 elif view_choice == "3":
-                    # Manufacturer breakdown
+                    # Warranty status breakdown
                     print("\n" + "=" * 60)
-                    self.ui.print_message("MANUFACTURER BREAKDOWN", "cyan")
+                    self.ui.print_message("WARRANTY STATUS BREAKDOWN", "cyan")
                     print("=" * 60)
-                    mfr_dist = stats.get("manufacturer_distribution", {})
+                    warranty_counts = stats.get("warranty_counts", {})
                     total = stats.get("total_devices", 1)
-                    for mfr, count in sorted(mfr_dist.items(), key=lambda x: x[1], reverse=True):
-                        pct = (count / total * 100) if total > 0 else 0
-                        print(f"   {mfr}: {count} devices ({pct:.1f}%)")
+                    if warranty_counts:
+                        for status, count in sorted(warranty_counts.items()):
+                            pct = (count / total * 100) if total > 0 else 0
+                            status_display = status.replace('_', ' ').title()
+                            if status == "expired":
+                                self.ui.print_message(f"   {status_display}: {count} ({pct:.1f}%)", "red")
+                            elif status == "expiring_soon":
+                                self.ui.print_message(f"   {status_display}: {count} ({pct:.1f}%)", "yellow")
+                            elif status == "active":
+                                self.ui.print_message(f"   {status_display}: {count} ({pct:.1f}%)", "success")
+                            else:
+                                print(f"   {status_display}: {count} ({pct:.1f}%)")
+                    else:
+                        print("   No warranty data available")
                     self.ui.press_any_key()
 
                 elif view_choice == "4":
-                    # Model breakdown (top 10)
+                    # Financial details
                     print("\n" + "=" * 60)
-                    self.ui.print_message("MODEL BREAKDOWN (Top 10)", "cyan")
+                    self.ui.print_message("FINANCIAL DETAILS", "cyan")
                     print("=" * 60)
-                    model_dist = stats.get("model_distribution", {})
-                    total = stats.get("total_devices", 1)
-                    for model, count in list(model_dist.items())[:10]:
-                        pct = (count / total * 100) if total > 0 else 0
-                        print(f"   {model}: {count} devices ({pct:.1f}%)")
+                    print(f"\n   Total Purchase Value: ${stats.get('total_purchase_value', 0):,.2f}")
+                    print(f"   Total Current Value: ${stats.get('total_current_value', 0):,.2f}")
+                    print(f"   Total Depreciation: ${stats.get('total_depreciation', 0):,.2f}")
+
+                    purchase_val = stats.get('total_purchase_value', 0)
+                    depreciation = stats.get('total_depreciation', 0)
+                    if purchase_val > 0:
+                        dep_rate = (depreciation / purchase_val * 100)
+                        print(f"   Overall Depreciation Rate: {dep_rate:.1f}%")
+
+                    # Show age distribution
+                    age_dist = stats.get("assets_by_age", {})
+                    if age_dist:
+                        print("\n   Asset Age Distribution:")
+                        for age_group, count in sorted(age_dist.items()):
+                            pct = (count / stats.get('total_devices', 1) * 100) if stats.get('total_devices', 0) > 0 else 0
+                            print(f"      {age_group}: {count} ({pct:.1f}%)")
+
+                    # Show financial details table if available
+                    if not financial_df.empty:
+                        print("\n   Top 10 Assets by Value:")
+                        print("-" * 60)
+                        sorted_df = financial_df.sort_values("current_value", ascending=False).head(10)
+                        display_cols = ["device_name", "asset_type", "purchase_price", "current_value"]
+                        available_cols = [c for c in display_cols if c in sorted_df.columns]
+                        if available_cols:
+                            print(sorted_df[available_cols].to_string(index=False))
+
                     self.ui.press_any_key()
 
                 elif view_choice == "5":
+                    # Assets needing attention
+                    print("\n" + "=" * 80)
+                    self.ui.print_message("ASSETS NEEDING ATTENTION", "cyan")
+                    print("=" * 80)
+
+                    attention_count = stats.get('assets_needing_attention', 0)
+                    if attention_count > 0:
+                        print(f"\nTotal: {attention_count} assets require attention\n")
+
+                        # Get attention assets
+                        attention_assets = [a for a in assets if a.requires_attention]
+                        for i, asset in enumerate(attention_assets[:15], 1):  # Show first 15
+                            print(f"{i}. {asset.device_name}")
+                            print(f"   Type: {asset.asset_type.value.title()}")
+                            print(f"   Serial: {asset.serial_number[:20]}{'...' if len(asset.serial_number) > 20 else ''}")
+                            self.ui.print_message(f"   Issues: {asset.attention_reason}", "yellow")
+                            if i < len(attention_assets) and i < 15:
+                                print()
+
+                        if len(attention_assets) > 15:
+                            print(f"\n... and {len(attention_assets) - 15} more assets")
+                    else:
+                        self.ui.print_message("No assets require immediate attention!", "success")
+
+                    self.ui.press_any_key()
+
+                elif view_choice == "6":
+                    # Audit report
+                    print("\n" + "=" * 80)
+                    self.ui.print_message("AUDIT REPORT", "cyan")
+                    print("=" * 80)
+                    if audit_report:
+                        print("\n" + audit_report)
+                    else:
+                        print("\nNo audit report available")
+                    self.ui.press_any_key()
+
+                elif view_choice == "7":
+                    # Full inventory report
+                    print("\n")
+                    if report_text:
+                        print(report_text)
+                    else:
+                        print("No detailed report text available")
+                    self.ui.press_any_key()
+
+                elif view_choice == "8":
+                    # Search assets
+                    await self._search_assets_menu(asset_tracker)
+
+                elif view_choice == "9":
                     # Export to CSV
                     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-                    export_dir = Path(self.config.export_path) / "equipment"
+                    export_dir = Path(self.config.export_path) / "equipment" / "asset_tracking"
                     export_dir.mkdir(parents=True, exist_ok=True)
-                    csv_path = export_dir / f"AssetTracking_{timestamp}.csv"
-                    df.to_csv(csv_path, index=False, encoding='utf-8-sig')
-                    self.ui.print_message(f"\nExported to: {csv_path}", "success")
+
+                    files_exported = []
+
+                    # Export device list
+                    if not df.empty:
+                        csv_path = export_dir / f"device_list_{timestamp}.csv"
+                        df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                        files_exported.append(csv_path)
+
+                    # Export asset inventory
+                    if not assets_df.empty:
+                        csv_path = export_dir / f"asset_inventory_{timestamp}.csv"
+                        assets_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                        files_exported.append(csv_path)
+
+                    # Export financial details
+                    if not financial_df.empty:
+                        csv_path = export_dir / f"asset_financial_{timestamp}.csv"
+                        financial_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+                        files_exported.append(csv_path)
+
+                    # Export report text
+                    if report_text:
+                        txt_path = export_dir / f"asset_report_{timestamp}.txt"
+                        with open(txt_path, 'w', encoding='utf-8') as f:
+                            f.write(report_text)
+                        files_exported.append(txt_path)
+
+                    # Export audit report
+                    if audit_report:
+                        txt_path = export_dir / f"asset_audit_{timestamp}.txt"
+                        with open(txt_path, 'w', encoding='utf-8') as f:
+                            f.write(audit_report)
+                        files_exported.append(txt_path)
+
+                    if files_exported:
+                        self.ui.print_message(f"\nExported {len(files_exported)} files to: {export_dir}", "success")
+                        for f in files_exported:
+                            print(f"   - {f.name}")
+                    else:
+                        self.ui.print_message("No data to export", "yellow")
+
                     self.ui.press_any_key()
 
                 else:
@@ -904,6 +1060,106 @@ class EntraLense:
             import traceback
             traceback.print_exc()
             self.ui.press_any_key()
+
+    async def _search_assets_menu(self, asset_tracker=None):
+        """Interactive asset search submenu"""
+        from modules.asset_tracker import AssetTracker, AssetType
+
+        if not asset_tracker:
+            export_dir = Path(self.config.export_path) / "equipment"
+            equipment_reports = EquipmentReports(self.auth, export_dir=export_dir, config=self.config)
+            asset_tracker = AssetTracker(self.auth, self.config)
+
+        while True:
+            print("\n" + "=" * 60)
+            self.ui.print_message("ASSET SEARCH", "cyan")
+            print("=" * 60)
+            print("\n1. Search by serial number")
+            print("2. Search by user/assignee")
+            print("3. Search by asset type")
+            print("B. Back")
+
+            search_choice = self.ui.get_input("\nSelect search type: ", "B")
+
+            if search_choice.upper() == "B":
+                return
+
+            elif search_choice == "1":
+                # Search by serial number
+                serial = self.ui.get_input("\nEnter serial number (or partial): ", "")
+                if serial:
+                    matches = asset_tracker.find_assets_by_serial(serial)
+                    self._display_asset_search_results(matches, f"serial containing '{serial}'")
+                else:
+                    self.ui.print_message("No serial number entered", "yellow")
+
+            elif search_choice == "2":
+                # Search by user
+                username = self.ui.get_input("\nEnter username (or partial): ", "")
+                if username:
+                    matches = asset_tracker.find_assets_by_user(username)
+                    self._display_asset_search_results(matches, f"user containing '{username}'")
+                else:
+                    self.ui.print_message("No username entered", "yellow")
+
+            elif search_choice == "3":
+                # Search by type
+                print("\nAvailable asset types:")
+                print("1. Laptop")
+                print("2. Desktop")
+                print("3. Server")
+                print("4. Tablet")
+                print("5. Mobile")
+                print("6. Other")
+
+                type_choice = self.ui.get_input("\nSelect asset type: ", "1")
+                type_map = {
+                    "1": AssetType.LAPTOP,
+                    "2": AssetType.DESKTOP,
+                    "3": AssetType.SERVER,
+                    "4": AssetType.TABLET,
+                    "5": AssetType.MOBILE,
+                    "6": AssetType.OTHER
+                }
+
+                if type_choice in type_map:
+                    asset_type = type_map[type_choice]
+                    matches = [a for a in asset_tracker.assets.values() if a.asset_type == asset_type]
+                    self._display_asset_search_results(matches, f"type '{asset_type.value}'")
+                else:
+                    self.ui.print_message("Invalid selection", "yellow")
+
+            else:
+                self.ui.print_message("Invalid option", "yellow")
+
+            self.ui.press_any_key()
+
+    def _display_asset_search_results(self, matches, search_desc: str):
+        """Display asset search results"""
+        if not matches:
+            self.ui.print_message(f"\nNo assets found with {search_desc}", "yellow")
+            return
+
+        self.ui.print_message(f"\nFound {len(matches)} assets with {search_desc}", "success")
+        print("\n" + "=" * 80)
+
+        for i, asset in enumerate(matches[:20], 1):  # Show first 20
+            print(f"\n{i}. {asset.device_name}")
+            print(f"   Serial: {asset.serial_number}")
+            print(f"   Type: {asset.asset_type.value.title()}")
+            print(f"   Manufacturer: {asset.manufacturer}")
+            print(f"   Model: {asset.model}")
+            print(f"   Assigned to: {asset.assigned_to or 'Unassigned'}")
+            print(f"   Status: {asset.status.value.title()}")
+            print(f"   Warranty: {asset.warranty_status.value.replace('_', ' ').title()}")
+
+            if asset.requires_attention:
+                self.ui.print_message(f"   Requires attention: {asset.attention_reason}", "yellow")
+
+        if len(matches) > 20:
+            print(f"\n... and {len(matches) - 20} more assets")
+
+        print("\n" + "=" * 80)
 
     async def run_login_activity_report(self):
         """Generate login activity report (Limited Batch Mode)"""
