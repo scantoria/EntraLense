@@ -1,0 +1,93 @@
+{
+  "windows": [
+    {
+      "cve_id": "CVE-2024-43451",
+      "name": "Windows NTLM Hash Disclosure Spoofing",
+      "severity": "critical",
+      "affected_versions": ["Windows 10", "Windows 11", "Windows Server"],
+      "patch_kb": "KB5044284",
+      "release_date": "2024-11-12",
+      "description": "NTLM hash disclosure vulnerability actively exploited"
+    },
+    {
+      "cve_id": "CVE-2024-49039",
+      "name": "Windows Task Scheduler Elevation of Privilege",
+      "severity": "critical",
+      "affected_versions": ["Windows 10", "Windows 11", "Windows Server"],
+      "patch_kb": "KB5044380",
+      "release_date": "2024-11-12",
+      "description": "Task Scheduler elevation of privilege vulnerability"
+    },
+    {
+      "cve_id": "CVE-2024-43639",
+      "name": "Windows Kerberos Remote Code Execution",
+      "severity": "critical",
+      "affected_versions": ["Windows Server"],
+      "patch_kb": "KB5044285",
+      "release_date": "2024-11-12",
+      "description": "Kerberos RCE vulnerability in Windows Server"
+    }
+  ],
+  "macos": [
+    {
+      "cve_id": "CVE-2024-44309",
+      "name": "WebKit Cookie Management Vulnerability",
+      "severity": "high",
+      "affected_versions": ["macOS Sequoia", "macOS Sonoma", "macOS Ventura"],
+      "patch_version": "15.1.1",
+      "release_date": "2024-11-19",
+      "description": "WebKit cookie management cross-site scripting vulnerability"
+    },
+    {
+      "cve_id": "CVE-2024-44308",
+      "name": "JavaScriptCore Arbitrary Code Execution",
+      "severity": "critical",
+      "affected_versions": ["macOS Sequoia", "macOS Sonoma"],
+      "patch_version": "15.1.1",
+      "release_date": "2024-11-19",
+      "description": "JavaScriptCore vulnerability allowing arbitrary code execution"
+    }
+  ],
+  "ios": [
+    {
+      "cve_id": "CVE-2024-44309",
+      "name": "WebKit Cookie Management Vulnerability",
+      "severity": "high",
+      "affected_versions": ["iOS 18", "iOS 17"],
+      "patch_version": "18.1.1",
+      "release_date": "2024-11-19",
+      "description": "WebKit cookie management cross-site scripting vulnerability"
+    },
+    {
+      "cve_id": "CVE-2024-44308",
+      "name": "JavaScriptCore Arbitrary Code Execution",
+      "severity": "critical",
+      "affected_versions": ["iOS 18", "iOS 17"],
+      "patch_version": "18.1.1",
+      "release_date": "2024-11-19",
+      "description": "JavaScriptCore vulnerability allowing arbitrary code execution"
+    }
+  ],
+  "android": [
+    {
+      "cve_id": "CVE-2024-43093",
+      "name": "Android Framework Elevation of Privilege",
+      "severity": "high",
+      "affected_versions": ["Android 12", "Android 13", "Android 14", "Android 15"],
+      "patch_level": "2024-11-05",
+      "release_date": "2024-11-04",
+      "description": "Framework component elevation of privilege vulnerability"
+    },
+    {
+      "cve_id": "CVE-2024-43047",
+      "name": "Qualcomm DSP Vulnerability",
+      "severity": "critical",
+      "affected_versions": ["Android devices with Qualcomm chipsets"],
+      "patch_level": "2024-11-05",
+      "release_date": "2024-11-04",
+      "description": "Use-after-free vulnerability in Qualcomm DSP services"
+    }
+  ],
+  "last_updated": "2024-11-20",
+  "source": "National Vulnerability Database (NVD), Microsoft Security Response Center, Apple Security Updates"
+}

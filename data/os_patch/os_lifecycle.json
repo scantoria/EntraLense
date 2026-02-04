@@ -1,0 +1,130 @@
+{
+  "windows": {
+    "11": {
+      "initial_release": "2021-10-05",
+      "mainstream_support": "2027-10-10",
+      "extended_support": "2032-10-10",
+      "releases": {
+        "21H2": {
+          "release_date": "2021-10-05",
+          "end_of_service": "2023-10-10",
+          "build_number": "22000"
+        },
+        "22H2": {
+          "release_date": "2022-10-18",
+          "end_of_service": "2024-10-08",
+          "build_number": "22621"
+        },
+        "23H2": {
+          "release_date": "2023-10-31",
+          "end_of_service": "2025-10-14",
+          "build_number": "22631"
+        },
+        "24H2": {
+          "release_date": "2024-10-01",
+          "end_of_service": "2026-10-13",
+          "build_number": "26100"
+        }
+      }
+    },
+    "10": {
+      "initial_release": "2015-07-29",
+      "mainstream_support": "2020-10-13",
+      "extended_support": "2025-10-14",
+      "releases": {
+        "21H2": {
+          "release_date": "2021-11-16",
+          "end_of_service": "2023-06-13",
+          "build_number": "19044"
+        },
+        "22H2": {
+          "release_date": "2022-10-18",
+          "end_of_service": "2025-10-14",
+          "build_number": "19045"
+        }
+      }
+    }
+  },
+  "macos": {
+    "sequoia": {
+      "version": "15",
+      "release_date": "2024-09-16",
+      "end_of_support": "2027-10-01",
+      "latest_version": "15.2"
+    },
+    "sonoma": {
+      "version": "14",
+      "release_date": "2023-09-26",
+      "end_of_support": "2026-10-01",
+      "latest_version": "14.7.1"
+    },
+    "ventura": {
+      "version": "13",
+      "release_date": "2022-10-24",
+      "end_of_support": "2025-10-01",
+      "latest_version": "13.7.1"
+    },
+    "monterey": {
+      "version": "12",
+      "release_date": "2021-10-25",
+      "end_of_support": "2024-10-01",
+      "latest_version": "12.7.6"
+    },
+    "big_sur": {
+      "version": "11",
+      "release_date": "2020-11-12",
+      "end_of_support": "2023-10-01",
+      "latest_version": "11.7.10"
+    }
+  },
+  "ios": {
+    "18": {
+      "release_date": "2024-09-16",
+      "end_of_support": "2027-09-01",
+      "latest_version": "18.2"
+    },
+    "17": {
+      "release_date": "2023-09-18",
+      "end_of_support": "2026-09-01",
+      "latest_version": "17.7.2"
+    },
+    "16": {
+      "release_date": "2022-09-12",
+      "end_of_support": "2025-09-01",
+      "latest_version": "16.7.10"
+    },
+    "15": {
+      "release_date": "2021-09-20",
+      "end_of_support": "2024-09-01",
+      "latest_version": "15.8.3"
+    }
+  },
+  "android": {
+    "15": {
+      "release_date": "2024-10-15",
+      "end_of_support": "2027-10-01",
+      "security_patch_level": "2024-11-05"
+    },
+    "14": {
+      "release_date": "2023-10-04",
+      "end_of_support": "2026-10-01",
+      "security_patch_level": "2024-11-05"
+    },
+    "13": {
+      "release_date": "2022-08-15",
+      "end_of_support": "2025-08-01",
+      "security_patch_level": "2024-11-05"
+    },
+    "12": {
+      "release_date": "2021-10-04",
+      "end_of_support": "2024-10-01",
+      "security_patch_level": "2024-03-05"
+    }
+  },
+  "last_updated": "2024-11-20",
+  "sources": [
+    "Microsoft Lifecycle Policy",
+    "Apple Security Updates",
+    "Android Security Bulletins"
+  ]
+}
