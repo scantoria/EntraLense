@@ -135,13 +135,10 @@ class EntraLenseBuilder:
             "--collect-all", "charset_normalizer",
             "--collect-all", "azure.identity",
             "--collect-all", "msgraph",
-            "--upx-dir", "UPX" if (self.project_root / "UPX").exists() else "",
+            *(["--upx-dir", "UPX"] if (self.project_root / "UPX").exists() else []),
             *icon_arg,
             "entra_lense.py"
         ]
-        
-        # Remove empty arguments
-        cmd = [arg for arg in cmd if arg]
         
         print("🔨 Running PyInstaller...")
         print(f"Command: {' '.join(cmd[:10])}...")
@@ -324,22 +321,25 @@ start "" "EntraLense.exe"
         
         if result.returncode == 0:
             print("✅ macOS build successful!")
-            
+
+            # Clean up build directory to free disk space before packaging
+            shutil.rmtree(self.project_root / "build" / "macos", ignore_errors=True)
+
             # Find the executable
             dist_dir = self.project_root / "dist" / "macos"
             exec_files = [f for f in dist_dir.iterdir() if f.is_file() and not f.name.startswith('.')]
-            
+
             if exec_files:
                 exec_path = exec_files[0]
                 os.chmod(exec_path, 0o755)  # Make executable
-                
+
                 size_mb = exec_path.stat().st_size / (1024*1024)
                 print(f"📁 Executable: {exec_path.name}")
                 print(f"📏 Size: {size_mb:.1f} MB")
-                
+
                 # Create DMG
                 self.create_macos_dmg(exec_path)
-                
+
                 return True
         else:
             print("❌ macOS build failed!")
@@ -556,6 +556,10 @@ cd "$(dirname "$0")"
 
         print("\n📁 Output directory: dist/")
         print("="*60)
+
+        # Exit with error code if any build failed
+        if not all(results.values()):
+            sys.exit(1)
 
 
 if __name__ == "__main__":
