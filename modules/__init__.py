@@ -9,6 +9,7 @@ from .user_reports import UserReports
 from .intune_integration import IntuneIntegration, IntuneDevice
 from .equipment_reports import EquipmentReports
 from .asset_tracker import AssetTracker, Asset, AssetType, AssetStatus, WarrantyStatus
+from .setup_wizard import SetupWizard
 
 __all__ = [
     'entra_auth',
@@ -23,5 +24,6 @@ __all__ = [
     'Asset',
     'AssetType',
     'AssetStatus',
-    'WarrantyStatus'
+    'WarrantyStatus',
+    'SetupWizard'
 ]

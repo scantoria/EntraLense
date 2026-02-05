@@ -22,6 +22,7 @@ from modules.azure_auth import entra_auth, EntraAuth
 from modules.user_reports import UserReports
 from modules.console_ui import ConsoleUI
 from modules.equipment_reports import EquipmentReports
+from modules.setup_wizard import SetupWizard
 
 
 class EntraLense:
@@ -41,13 +42,33 @@ class EntraLense:
 
     async def initialize(self):
         """Initialize the application"""
-        print("🚀 Initializing EntraLense...")
+        print("Initializing EntraLense...")
+
+        # Check for first-time setup using new SetupWizard
+        setup_wizard = SetupWizard(dark_mode=True)
+        if not setup_wizard.check_existing_config():
+            temp_ui = ConsoleUI()
+            temp_ui.clear_screen()
+            temp_ui.print_header("Welcome to EntraLense v1.0")
+            print("\n" + "=" * 60)
+            print("First-time setup required")
+            print("=" * 60)
+            print("\nEntraLense needs to be configured with your Azure AD credentials.")
+            print("This will take about 2-3 minutes.")
+
+            input("\nPress Enter to start setup...")
+
+            # Run setup wizard
+            success = setup_wizard.run_wizard()
+            if not success:
+                print("Setup failed. Exiting application.")
+                sys.exit(1)
 
         # Load configuration
         self.config = config_manager.load()
 
         if not config_manager.is_configured():
-            print("🔧 Configuration needed. Running setup wizard...")
+            print("Configuration needed. Running setup wizard...")
             self.config = config_manager.run_setup_wizard()
 
         # Initialize authentication
@@ -85,6 +106,9 @@ class EntraLense:
                 ("1", "Users"),
                 ("2", "Email"),
                 ("3", "Equipment"),
+                ("4", "Service Status Dashboard (Coming Soon)"),
+                ("5", "Settings"),
+                ("9", "Reconfigure Credentials"),
                 ("Q", "Quit")
             ]
 
@@ -102,6 +126,15 @@ class EntraLense:
 
             elif choice == "3":
                 await self.show_equipment_menu()
+
+            elif choice == "4":
+                await self.service_dashboard_menu()
+
+            elif choice == "5":
+                await self.show_settings_menu()
+
+            elif choice == "9":
+                await self.reconfigure_credentials()
 
             else:
                 self.ui.print_message("Invalid selection!", "red")
@@ -213,6 +246,106 @@ class EntraLense:
 
             elif choice == "5":
                 await self._search_assets_menu()
+
+            else:
+                self.ui.print_message("Invalid selection!", "red")
+                await asyncio.sleep(1)
+
+    async def service_dashboard_menu(self) -> None:
+        """Service Status Dashboard menu (coming soon)."""
+        self.ui.clear_screen()
+        self.ui.print_header("Service Status Dashboard")
+        print("\nFeature Coming Soon!")
+        print("\nThis feature will provide:")
+        print("* Microsoft 365 Service Health monitoring")
+        print("* Box.com status monitoring")
+        print("* Real-time service status dashboard")
+        print("* Automated incident reporting")
+        print("\n" + "=" * 60)
+        input("\nPress Enter to continue...")
+
+    async def reconfigure_credentials(self) -> None:
+        """Reconfigure Azure AD credentials."""
+        setup_wizard = SetupWizard(dark_mode=self.config.dark_mode if self.config else True)
+        setup_wizard.reconfigure_wizard()
+
+        # Reload configuration after reconfigure
+        self.config = config_manager.load()
+
+        # Re-authenticate with new credentials
+        if self.config and self.config.tenant_id and self.config.client_id:
+            self.ui.print_message("Re-authenticating with new credentials...", "info")
+            self.auth = entra_auth
+            self.auth.config = self.config
+            try:
+                await self.auth.authenticate()
+                self.ui.print_message("Authentication successful!", "success")
+            except Exception as e:
+                self.ui.print_message(f"Authentication failed: {e}", "error")
+            self.ui.press_any_key()
+
+    async def show_settings_menu(self) -> None:
+        """Display Settings menu."""
+        assert self.ui is not None
+
+        while True:
+            self.ui.clear_screen()
+            self.ui.print_header("SETTINGS")
+
+            menu_items = [
+                ("1", f"Export Path: {self.config.export_path if self.config else './exports'}"),
+                ("2", f"Dark Mode: {'On' if (self.config and self.config.dark_mode) else 'Off'}"),
+                ("3", f"Max Users: {self.config.max_users if self.config else 5000}"),
+                ("4", "View Current Configuration"),
+                ("B", "Back to Main Menu")
+            ]
+
+            choice = self.ui.display_menu("Settings", menu_items)
+
+            if choice.upper() == "B":
+                return
+
+            elif choice == "1":
+                new_path = input("\nEnter new export path: ").strip()
+                if new_path and self.config:
+                    self.config.export_path = new_path
+                    Path(new_path).mkdir(exist_ok=True)
+                    config_manager.save()
+                    self.ui.print_message("Export path updated!", "success")
+                    self.ui.press_any_key()
+
+            elif choice == "2":
+                if self.config:
+                    self.config.dark_mode = not self.config.dark_mode
+                    config_manager.save()
+                    self.ui.print_message(f"Dark mode {'enabled' if self.config.dark_mode else 'disabled'}!", "success")
+                    self.ui.press_any_key()
+
+            elif choice == "3":
+                try:
+                    new_max = int(input("\nEnter max users to fetch: ").strip())
+                    if new_max > 0 and self.config:
+                        self.config.max_users = new_max
+                        config_manager.save()
+                        self.ui.print_message("Max users updated!", "success")
+                except ValueError:
+                    self.ui.print_message("Invalid number!", "error")
+                self.ui.press_any_key()
+
+            elif choice == "4":
+                self.ui.clear_screen()
+                self.ui.print_header("Current Configuration")
+                if self.config:
+                    print(f"\nTenant ID: {self.config.tenant_id[:8]}..." if self.config.tenant_id else "Not set")
+                    print(f"Client ID: {self.config.client_id[:8]}..." if self.config.client_id else "Not set")
+                    print(f"Auth Method: {'Interactive' if self.config.use_interactive_auth else 'Client Secret'}")
+                    print(f"Export Path: {self.config.export_path}")
+                    print(f"Max Users: {self.config.max_users}")
+                    print(f"Dark Mode: {self.config.dark_mode}")
+                else:
+                    print("\nNo configuration loaded.")
+                print("\n" + "=" * 60)
+                self.ui.press_any_key()
 
             else:
                 self.ui.print_message("Invalid selection!", "red")
