@@ -233,8 +233,8 @@ Email: stephen.cantoria@thisbyte.com
 EntraLense v{self.version} | The Full Stack and Beneath
 """
         
-        (portable_dir / "README.txt").write_text(readme_content)
-        
+        (portable_dir / "README.txt").write_text(readme_content, encoding="utf-8")
+
         # Create batch file for easy launching
         batch_content = """@echo off
 echo EntraLense v1.0.0 - Azure AD Audit Tool
