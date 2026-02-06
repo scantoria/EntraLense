@@ -4,7 +4,6 @@ import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
-import getpass
 
 from modules.console_ui import ConsoleUI
 from modules.azure_auth import EntraAuth
@@ -119,9 +118,9 @@ class SetupWizard:
         print("\n\n[Client Secret]")
         print("   Create a new secret in your App Registration")
         print("   Copy the VALUE (not the Secret ID)")
-        print("   WARNING: Secret will be masked during entry")
+        print("   NOTE: Input will be visible to allow pasting")
 
-        secret = getpass.getpass("\nEnter Client Secret: ")
+        secret = input("\nEnter Client Secret: ").strip()
         credentials["client_secret"] = secret
 
         return credentials
