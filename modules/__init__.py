@@ -10,6 +10,7 @@ from .intune_integration import IntuneIntegration, IntuneDevice
 from .equipment_reports import EquipmentReports
 from .asset_tracker import AssetTracker, Asset, AssetType, AssetStatus, WarrantyStatus
 from .setup_wizard import SetupWizard
+from .entralense_logger import EntraLenseLogger, get_global_logger, open_logs_folder
 
 __all__ = [
     'entra_auth',
@@ -25,5 +26,8 @@ __all__ = [
     'AssetType',
     'AssetStatus',
     'WarrantyStatus',
-    'SetupWizard'
+    'SetupWizard',
+    'EntraLenseLogger',
+    'get_global_logger',
+    'open_logs_folder'
 ]

@@ -41,6 +41,10 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
+      - name: Clear build credentials
+        shell: bash
+        run: python clear_build_credentials.py
+
       - name: Run build script
         env:
           PYTHONIOENCODING: utf-8

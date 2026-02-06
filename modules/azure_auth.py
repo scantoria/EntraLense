@@ -10,6 +10,9 @@ from azure.identity import (
     DeviceCodeCredential,
 )
 from msgraph.graph_service_client import GraphServiceClient
+from modules.entralense_logger import get_global_logger
+
+logger = get_global_logger()
 
 if TYPE_CHECKING:
     from modules.config_manager import EntraConfig
@@ -36,19 +39,27 @@ class EntraAuth:
     async def authenticate(self) -> GraphServiceClient:
         """Authenticate and return Graph client"""
         if self.graph_client:
+            logger.debug("Using existing Graph client")
             return self.graph_client
-            
+
         if not self.config or not self.config.tenant_id or not self.config.client_id:
+            logger.error("Missing Azure credentials")
             raise EntraAuthError("Missing Azure credentials.")
-        
+
         try:
+            auth_method = None
+
             if self.config.use_interactive_auth:
+                logger.info("Using interactive authentication...")
+                auth_method = "interactive"
                 print("🔐 Using interactive authentication...")
                 credential = InteractiveBrowserCredential(
                     tenant_id=self.config.tenant_id,
                     client_id=self.config.client_id
                 )
             elif self.config.client_secret:
+                logger.info("Using client secret authentication...")
+                auth_method = "client_secret"
                 print("🔐 Using client secret authentication...")
                 credential = ClientSecretCredential(
                     tenant_id=self.config.tenant_id,
@@ -57,22 +68,26 @@ class EntraAuth:
                 )
             else:
                 # Fallback to device code flow
+                logger.info("Using device code authentication...")
+                auth_method = "device_code"
                 print("🔐 Using device code authentication...")
                 credential = DeviceCodeCredential(
                     tenant_id=self.config.tenant_id,
                     client_id=self.config.client_id,
                     prompt_callback=_device_code_prompt
                 )
-            
+
             # Create Graph client
             self.graph_client = GraphServiceClient(credential)
-            
+
             # Test connection (await properly)
             await self._test_connection()
-            
+
+            logger.info(f"Authentication successful - Method: {auth_method}")
             return self.graph_client
-            
+
         except Exception as e:
+            logger.error(f"Authentication failed: {str(e)}", exc_info=True)
             raise EntraAuthError(f"Authentication failed: {str(e)}")
     
     async def _test_connection(self):
@@ -82,8 +97,10 @@ class EntraAuth:
                 return
             user = await self.graph_client.me.get()
             if user:
+                logger.info(f"Authenticated as: {user.display_name}")
                 print(f"✅ Authenticated as: {user.display_name}")
         except Exception as e:
+            logger.warning(f"Could not verify user identity: {e}")
             print(f"⚠️ Note: {e}")
             print("   (This may be normal for app-only permissions)")
     

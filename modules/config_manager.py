@@ -9,6 +9,9 @@ import sys
 from pathlib import Path
 from typing import Dict, Optional, Any
 from dataclasses import dataclass, asdict, field
+from modules.entralense_logger import get_global_logger
+
+logger = get_global_logger()
 
 # Load environment variables from .env file
 try:
@@ -75,44 +78,49 @@ class ConfigManager:
     
     def load(self) -> EntraConfig:
         """Load configuration from file or environment"""
+        logger.info("Loading configuration...")
         print(f"📂 Loading configuration...")
-        
+
         # Try loading from file first
         if self.config_path.exists():
             try:
                 with open(self.config_path, 'r') as f:
                     data = json.load(f)
                     self.config = EntraConfig.from_dict(data)
+                    logger.info(f"Loaded from config file: {self.config_path}")
                     print(f"✅ Loaded from config file: {self.config_path}")
                     return self.config
             except Exception as e:
+                logger.error(f"Could not load config file: {e}", exc_info=True)
                 print(f"⚠️ Could not load config file: {e}")
-        
+
         # Fall back to environment variables
+        logger.info("Checking environment variables...")
         print("🔍 Checking environment variables...")
-        
-        # Debug: Show what's in environment
-        print(f"   Looking for ENTRA_TENANT_ID: {'FOUND' if os.getenv('ENTRA_TENANT_ID') else 'NOT FOUND'}")
-        print(f"   Looking for ENTRA_CLIENT_ID: {'FOUND' if os.getenv('ENTRA_CLIENT_ID') else 'NOT FOUND'}")
-        
+
         self.config.tenant_id = os.getenv("ENTRA_TENANT_ID", "")
         self.config.client_id = os.getenv("ENTRA_CLIENT_ID", "")
         self.config.client_secret = os.getenv("ENTRA_CLIENT_SECRET")
-        
-        # Debug output
+
+        # Log what was found (without sensitive data)
+        has_tenant = bool(self.config.tenant_id)
+        has_client = bool(self.config.client_id)
+        logger.info(f"Tenant ID found: {has_tenant}, Client ID found: {has_client}")
         print(f"   Tenant ID loaded: {'Yes' if self.config.tenant_id else 'No'}")
         print(f"   Client ID loaded: {'Yes' if self.config.client_id else 'No'}")
-        
+
         # If we have credentials, save them
         if self.config.tenant_id and self.config.client_id:
+            logger.info("Saving credentials from environment variables...")
             print("💾 Saving credentials from environment variables...")
             self.save()
         else:
+            logger.warning("No credentials found in environment variables")
             print("❌ No credentials found in environment variables.")
             print("   Make sure .env file exists in project root with:")
             print("   ENTRA_TENANT_ID=your-tenant-id")
             print("   ENTRA_CLIENT_ID=your-client-id")
-            
+
         return self.config
     
     def save(self) -> bool:
@@ -120,9 +128,11 @@ class ConfigManager:
         try:
             with open(self.config_path, 'w') as f:
                 json.dump(asdict(self.config), f, indent=2, default=str)
+            logger.info(f"Configuration saved to: {self.config_path}")
             print(f"✅ Configuration saved to: {self.config_path}")
             return True
         except Exception as e:
+            logger.error(f"Failed to save configuration: {e}", exc_info=True)
             print(f"❌ Failed to save configuration: {e}")
             return False
     

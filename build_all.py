@@ -524,6 +524,32 @@ cd "$(dirname "$0")"
         # Clean up
         shutil.rmtree(portable_dir, ignore_errors=True)
 
+    def clear_build_credentials(self):
+        """Clear credentials before building"""
+        print("\n🔒 Clearing build credentials...")
+
+        # Run the clearing script
+        clear_script = self.project_root / "clear_build_credentials.py"
+
+        if clear_script.exists():
+            result = subprocess.run(
+                [sys.executable, str(clear_script)],
+                capture_output=True,
+                text=True
+            )
+
+            print(result.stdout)
+
+            if result.returncode != 0:
+                print(f"⚠️  Credential clearing failed: {result.stderr}")
+                return False
+        else:
+            print("⚠️  clear_build_credentials.py not found")
+            print("   Creating empty config directory...")
+            (self.project_root / "config").mkdir(exist_ok=True)
+
+        return True
+
     def build_all(self):
         """Run all build steps"""
         print("\n" + "="*60)
@@ -534,6 +560,11 @@ cd "$(dirname "$0")"
 
         self.setup_environment()
         self.create_icons()
+
+        # Clear credentials before building
+        if not self.clear_build_credentials():
+            print("⚠️  Warning: Could not clear credentials")
+            print("   Continuing with build...")
 
         results = {}
 

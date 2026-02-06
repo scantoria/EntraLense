@@ -23,6 +23,9 @@ from modules.user_reports import UserReports
 from modules.console_ui import ConsoleUI
 from modules.equipment_reports import EquipmentReports
 from modules.setup_wizard import SetupWizard
+from modules.entralense_logger import get_global_logger, open_logs_folder
+
+logger = get_global_logger()
 
 
 class EntraLense:
@@ -42,11 +45,15 @@ class EntraLense:
 
     async def initialize(self):
         """Initialize the application"""
+        logger.info("=" * 60)
+        logger.info("EntraLense Application Starting")
+        logger.info("=" * 60)
         print("Initializing EntraLense...")
 
         # Check for first-time setup using new SetupWizard
         setup_wizard = SetupWizard(dark_mode=True)
         if not setup_wizard.check_existing_config():
+            logger.info("First-time setup required")
             temp_ui = ConsoleUI()
             temp_ui.clear_screen()
             temp_ui.print_header("Welcome to EntraLense v1.0")
@@ -61,17 +68,22 @@ class EntraLense:
             # Run setup wizard
             success = setup_wizard.run_wizard()
             if not success:
+                logger.error("Setup wizard failed")
                 print("Setup failed. Exiting application.")
                 sys.exit(1)
+            logger.info("Setup wizard completed successfully")
 
         # Load configuration
+        logger.info("Loading configuration...")
         self.config = config_manager.load()
 
         if not config_manager.is_configured():
+            logger.warning("Configuration incomplete, running setup wizard")
             print("Configuration needed. Running setup wizard...")
             self.config = config_manager.run_setup_wizard()
 
         # Initialize authentication
+        logger.info("Initializing authentication...")
         print("🔐 Authenticating with Azure AD...")
         self.auth = entra_auth
         self.auth.config = self.config
@@ -80,7 +92,9 @@ class EntraLense:
             # Test authentication immediately
             await self.auth.authenticate()
             print("✅ Authentication successful!")
+            logger.info("Authentication test successful")
         except Exception as e:
+            logger.error(f"Authentication failed: {e}", exc_info=True)
             print(f"❌ Authentication failed: {e}")
             print("Please check your credentials and try again.")
             return False
@@ -90,6 +104,7 @@ class EntraLense:
         export_dir = Path(self.config.export_path)
         self.reports = UserReports(self.auth, export_dir=export_dir)
 
+        logger.info("EntraLense initialized successfully")
         print("✅ EntraLense initialized successfully!")
         return True
 
@@ -108,6 +123,7 @@ class EntraLense:
                 ("3", "Equipment"),
                 ("4", "Service Status Dashboard (Coming Soon)"),
                 ("5", "Settings"),
+                ("L", "View Logs"),
                 ("9", "Reconfigure Credentials"),
                 ("Q", "Quit")
             ]
@@ -132,6 +148,11 @@ class EntraLense:
 
             elif choice == "5":
                 await self.show_settings_menu()
+
+            elif choice.upper() == "L":
+                open_logs_folder()
+                self.ui.print_message("Logs folder opened!", "success")
+                await asyncio.sleep(1)
 
             elif choice == "9":
                 await self.reconfigure_credentials()
