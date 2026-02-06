@@ -148,22 +148,25 @@ class SetupWizard:
             temp_config.use_interactive_auth = False
 
             auth = EntraAuth()
+            auth.config = temp_config
 
-            # Test authentication
-            is_valid = auth.authenticate(temp_config)
+            # Test authentication (async)
+            import asyncio
 
-            if not is_valid:
+            async def test_auth():
+                client = await auth.authenticate()
+                return client
+
+            try:
+                client = asyncio.run(test_auth())
+            except Exception:
                 return False, "Authentication failed. Please check your credentials.", None
 
-            # Test basic API call
-            client = auth.get_client()
             if not client:
                 return False, "Failed to create Graph API client.", None
 
             # Try to get current user/service principal info
             try:
-                import asyncio
-
                 async def get_org_info():
                     org_info = await client.organization.get()
                     return org_info
