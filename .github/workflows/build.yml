@@ -50,29 +50,29 @@ jobs:
           PYTHONIOENCODING: utf-8
         run: python build_all.py
 
-      # --- Windows artifacts ---
-      - name: Upload Windows executable
+      # --- Windows artifacts (--onedir) ---
+      - name: Upload Windows distribution
         if: matrix.platform == 'windows'
         uses: actions/upload-artifact@v4
         with:
-          name: EntraLense-Windows-exe
-          path: dist/windows/*.exe
+          name: EntraLense-Windows-Distribution
+          path: dist/windows/EntraLense/
 
       - name: Upload Windows portable ZIP
         if: matrix.platform == 'windows'
         uses: actions/upload-artifact@v4
         with:
           name: EntraLense-Windows-Portable
-          path: dist/EntraLense_Windows_Portable_*.zip
+          path: dist/EntraLense_Windows_*.zip
           if-no-files-found: ignore
 
-      # --- macOS artifacts ---
-      - name: Upload macOS executable
+      # --- macOS artifacts (--onedir) ---
+      - name: Upload macOS distribution
         if: matrix.platform == 'macos'
         uses: actions/upload-artifact@v4
         with:
-          name: EntraLense-macOS-executable
-          path: dist/macos/EntraLense
+          name: EntraLense-macOS-Distribution
+          path: dist/macos/EntraLense/
 
       - name: Upload macOS DMG
         if: matrix.platform == 'macos'
@@ -80,12 +80,4 @@ jobs:
         with:
           name: EntraLense-macOS-DMG
           path: dist/EntraLense_*.dmg
-          if-no-files-found: ignore
-
-      - name: Upload macOS portable ZIP
-        if: matrix.platform == 'macos'
-        uses: actions/upload-artifact@v4
-        with:
-          name: EntraLense-macOS-Portable
-          path: dist/EntraLense_macOS_Portable_*.zip
           if-no-files-found: ignore

@@ -1,0 +1,55 @@
+name: Build Diagnostic Version
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  build-diagnostic-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build diagnostic version
+        run: python build_diagnostic.py
+
+      - name: Upload diagnostic build
+        uses: actions/upload-artifact@v4
+        with:
+          name: EntraLense-Diagnostic-Windows
+          path: dist/windows/
+
+  build-diagnostic-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build diagnostic version
+        run: python build_diagnostic.py
+
+      - name: Upload diagnostic build
+        uses: actions/upload-artifact@v4
+        with:
+          name: EntraLense-Diagnostic-macOS
+          path: dist/macos/

@@ -6,6 +6,7 @@ Handles loading/saving settings for both development and compiled executable.
 import os
 import json
 import sys
+import platform
 from pathlib import Path
 from typing import Dict, Optional, Any
 from dataclasses import dataclass, asdict, field
@@ -62,18 +63,26 @@ class ConfigManager:
         self.config = EntraConfig()
         
     def _get_config_path(self) -> Path:
-        """Get platform-specific config directory"""
+        """Get platform-specific config directory with proper frozen app handling"""
         if getattr(sys, 'frozen', False):
             # Running as compiled executable
-            base_dir = Path(sys.executable).parent
+            # Use the directory where the executable is located
+            if platform.system() == 'Darwin':
+                # macOS .app bundle: look in Contents/Resources
+                base_dir = Path(sys.executable).parent.parent / "Resources"
+                if not base_dir.exists():
+                    base_dir = Path(sys.executable).parent
+            else:
+                # Windows: executable directory
+                base_dir = Path(sys.executable).parent
         else:
             # Running as script
             base_dir = Path(__file__).parent.parent  # Go up to project root
-        
+
         # Create config directory if it doesn't exist
         config_dir = base_dir / "config"
-        config_dir.mkdir(exist_ok=True)
-        
+        config_dir.mkdir(exist_ok=True, parents=True)
+
         return config_dir / "entralense_config.json"
     
     def load(self) -> EntraConfig:
