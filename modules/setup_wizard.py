@@ -157,10 +157,7 @@ class SetupWizard:
                 client = await auth.authenticate()
                 return client
 
-            try:
-                client = asyncio.run(test_auth())
-            except Exception:
-                return False, "Authentication failed. Please check your credentials.", None
+            client = asyncio.run(test_auth())
 
             if not client:
                 return False, "Failed to create Graph API client.", None
