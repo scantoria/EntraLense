@@ -110,6 +110,7 @@ class ConfigManager:
         self.config.tenant_id = os.getenv("ENTRA_TENANT_ID", "")
         self.config.client_id = os.getenv("ENTRA_CLIENT_ID", "")
         self.config.client_secret = os.getenv("ENTRA_CLIENT_SECRET")
+        self.config.use_interactive_auth = os.getenv("ENTRA_USE_INTERACTIVE_AUTH", "true").lower() == "true"
 
         # Log what was found (without sensitive data)
         has_tenant = bool(self.config.tenant_id)
