@@ -66,7 +66,7 @@ class EntraLense:
             input("\nPress Enter to start setup...")
 
             # Run setup wizard
-            success = setup_wizard.run_wizard()
+            success = await setup_wizard.run_wizard()
             if not success:
                 logger.error("Setup wizard failed")
                 print("Setup failed. Exiting application.")
@@ -288,7 +288,7 @@ class EntraLense:
     async def reconfigure_credentials(self) -> None:
         """Reconfigure Azure AD credentials."""
         setup_wizard = SetupWizard(dark_mode=self.config.dark_mode if self.config else True)
-        setup_wizard.reconfigure_wizard()
+        await setup_wizard.reconfigure_wizard()
 
         # Reload configuration after reconfigure
         self.config = config_manager.load()

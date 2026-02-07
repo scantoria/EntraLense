@@ -125,7 +125,7 @@ class SetupWizard:
 
         return credentials
 
-    def validate_credentials(self, credentials: Dict[str, str]) -> tuple:
+    async def validate_credentials(self, credentials: Dict[str, str]) -> tuple:
         """
         Validate Azure AD credentials.
 
@@ -150,25 +150,15 @@ class SetupWizard:
             auth = EntraAuth()
             auth.config = temp_config
 
-            # Test authentication (async)
-            import asyncio
-
-            async def test_auth():
-                client = await auth.authenticate()
-                return client
-
-            client = asyncio.run(test_auth())
+            # Test authentication
+            client = await auth.authenticate()
 
             if not client:
                 return False, "Failed to create Graph API client.", None
 
             # Try to get current user/service principal info
             try:
-                async def get_org_info():
-                    org_info = await client.organization.get()
-                    return org_info
-
-                org_info = asyncio.run(get_org_info())
+                org_info = await client.organization.get()
 
                 if org_info.value and len(org_info.value) > 0:
                     org = org_info.value[0]
@@ -331,7 +321,7 @@ ENTRA_SNMP_VERSION="2c"
 
         print("\n" + "=" * 60)
 
-    def run_wizard(self) -> bool:
+    async def run_wizard(self) -> bool:
         """
         Run the complete setup wizard.
 
@@ -346,7 +336,7 @@ ENTRA_SNMP_VERSION="2c"
             credentials = self.collect_credentials()
 
             # Step 3: Validate credentials
-            is_valid, error_msg, user_info = self.validate_credentials(credentials)
+            is_valid, error_msg, user_info = await self.validate_credentials(credentials)
 
             if not is_valid:
                 self.ui.clear_screen()
@@ -408,7 +398,7 @@ ENTRA_SNMP_VERSION="2c"
         except Exception:
             return False
 
-    def reconfigure_wizard(self) -> None:
+    async def reconfigure_wizard(self) -> None:
         """Run reconfiguration wizard for existing installations."""
         self.ui.clear_screen()
         self.ui.print_header("Reconfigure EntraLense Credentials")
@@ -431,7 +421,7 @@ ENTRA_SNMP_VERSION="2c"
                 self.ui.print_message(f"Could not create backup: {e}", "warning")
 
         # Run setup wizard
-        success = self.run_wizard()
+        success = await self.run_wizard()
 
         if success:
             self.ui.print_message("\nReconfiguration complete!", "success")
